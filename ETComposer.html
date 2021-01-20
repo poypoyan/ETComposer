@@ -1,0 +1,275 @@
+<!doctype html>
+<html>
+<head>
+<title>Equal Temperament Stuff</title>
+<meta charset="utf-8">
+<script>
+function generateFreq(){
+    // get values
+    var startFreq = parseFloat(document.getElementById('startFreq').value);
+    var endFreq = parseFloat(document.getElementById('endFreq').value);
+    var division = parseInt(document.getElementById('division').value);
+    // error check the numerical values
+    if(!(startFreq > 0 && endFreq > 0 && division >= 0)){
+        alert("Error: found an invalid value.");
+        return;
+    }
+    // setup the frequencies
+    var currFreq = startFreq;
+    document.getElementById('freqList').options.length = 0;   // clear list box
+    for(var i = 0; i < (division + 1); i++){
+        // add frequency to list box
+        var opt = document.createElement("option");
+        opt.value = currFreq;
+        opt.text = i + ": " + currFreq;
+        document.getElementById('freqList').add(opt);
+        // next frequency (last frequency is set to endFreq)
+        currFreq = (i == division - 1) ? endFreq : currFreq * Math.pow(endFreq / startFreq, 1 / division);
+    }
+}
+function clearFreq(){
+    document.getElementById('freqList').options.length = 0;   // clear list box
+    // bring back the original 'empty' option
+    var opt = document.createElement("option");
+    opt.text = "Empty"; opt.disabled = true;
+    document.getElementById('freqList').add(opt);
+    document.getElementById('grabbedFreq').value = "";   // clear grabbedFreq also;
+}
+function grabFreq(){
+    var list = document.getElementById('freqList');
+    document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
+}
+function playNotes(){
+    // get needed inputs 
+    var duration = parseFloat(document.getElementById('duration').value);
+    var composed = document.getElementById('composed').value;
+    var list = document.getElementById('freqList');
+    // error check the numerical values
+    if(!(duration > 0)){
+        alert("Error: 'duration' value is invalid.");
+        return;
+    }
+    // abort if freqList is clear
+    if(list.options.length == 0) return;
+    // if proceed, disable play button
+    document.getElementById('play').disabled = true;
+    // get selected waveType
+    var waveType, radios = document.getElementsByName('waveType');
+    for (var i = 0; i < radios.length; i++){
+        if (radios[i].checked) waveType =  radios[i].value;
+    }
+
+    // setup web audio API
+    var context = new (window.AudioContext || window.webkitAudioContext)();
+    var oscArr = new Array(list.options.length);
+    for(var i = 0; i < oscArr.length; i++){
+        oscArr[i] = context.createOscillator();
+        oscArr[i].type = waveType;
+    }
+    // parse JSON
+    try {
+        var compArr = JSON.parse(composed);
+    } catch(e){
+        alert("JSON syntax error.");
+        document.getElementById('play').disabled = false;
+        return;
+    }
+    var currFreq;
+    try {
+        // add frequency to sounds to play
+        for(var i = 0; i < compArr.length; i++){
+            for(var j = 0; j < oscArr.length; j++){
+                if(j < compArr[i].length){
+                    currFreq = parseFloat(list[compArr[i][j]].value);
+                    oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + i * duration);
+                } else {
+                    oscArr[j].frequency.setValueAtTime(0, context.currentTime + i * duration);
+                }
+            }
+        }
+    } catch(e){
+        alert("Error: found an invalid index.");
+        document.getElementById('play').disabled = false;
+        return;
+    }
+
+    // setup sound volume
+    var gainNode = context.createGain();
+    gainNode.gain.value = 0.1;   // low volume
+    // connect nodes and start playing!
+    for(let oscIter of oscArr) oscIter.connect(gainNode);
+    gainNode.connect(context.destination);
+    for(let oscIter of oscArr) oscIter.start();
+
+    // once play is completed, reenable play button
+    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compArr.length * duration);
+    oscArr[0].onended = function(e){
+        document.getElementById('play').disabled = false;
+    }
+    // if stop button is clicked, then stop playing and reenable play button
+    document.getElementById('stop').onclick=function(e){
+        for(let oscIter of oscArr) oscIter.stop();
+        document.getElementById('play').disabled = false;
+    }
+}
+</script>
+<style>
+/* http://meyerweb.com/eric/tools/css/reset/
+   v2.0 | 20110126
+   License: none (public domain) */
+html, body, div, span, applet, object, iframe,
+h1, h2, h3, h4, h5, h6, p, blockquote, pre,
+a, abbr, acronym, address, big, cite, code,
+del, dfn, em, img, ins, kbd, q, s, samp,
+small, strike, strong, sub, sup, tt, var,
+b, u, i, center,
+dl, dt, dd, ol, ul, li,
+fieldset, form, label, legend,
+table, caption, tbody, tfoot, thead, tr, th, td,
+article, aside, canvas, details, embed, 
+figure, figcaption, footer, header, hgroup, 
+menu, nav, output, ruby, section, summary,
+time, mark, audio, video {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    font-size: 100%;
+    font: inherit;
+    vertical-align: baseline;
+}
+/* HTML5 display-role reset for older browsers */
+article, aside, details, figcaption, figure, 
+footer, header, hgroup, menu, nav, section {
+    display: block;
+}
+body {
+    line-height: 1;
+}
+ol, ul {
+    list-style: none;
+}
+blockquote, q {
+    quotes: none;
+}
+blockquote:before, blockquote:after,
+q:before, q:after {
+    content: '';
+    content: none;
+}
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+/* CSS grid */
+.grid-container {
+    display: grid;
+    margin: 10px;
+    width: 1248px;
+    border: 1px solid;
+}
+.grid-header { border: 1px solid; grid-area: 1/1/2/5; }
+.grid-srtfreq { border: 1px solid; grid-area: 2/1/3/2; }
+.grid-endfreq { border: 1px solid; grid-area: 2/2/3/3; }
+.grid-freqpal { border: 1px solid; grid-area: 2/3/4/4; }
+.grid-composed { border: 1px solid; grid-area: 2/4/4/5; }
+.grid-division { border: 1px solid; grid-area: 3/1/4/2; }
+.grid-duration { border: 1px solid; grid-area: 3/2/4/3; }
+.grid-ctrlpal { border: 1px solid; grid-area: 4/1/5/2; }
+.grid-wavetype { border: 1px solid; grid-area: 4/2/5/3; }
+.grid-grbfreq { border: 1px solid; grid-area: 4/3/5/4; }
+.grid-ctrlcomp { border: 1px solid; grid-area: 4/4/5/5; }
+/* per element types */
+h2, #gen, #clear, #play, #stop, #copy,
+#startFreq, #endFreq, #division, #duration, #grabbedFreq,
+#freqList, #composed, #waveTypes {
+    margin: 5px;
+    font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
+}
+h2 {   /* usual texts */
+    font-size: 25px;
+    font-weight: bold;
+}
+#gen, #clear, #play, #stop, #copy {   /* buttons */
+    padding: 5px; width: 300px; border: 1px solid;
+    font-size: 30px;
+    font-weight: bold;
+}
+#startFreq, #endFreq, #division, #duration, #grabbedFreq {   /* textboxes */
+    padding: 5px; width: 300px; border: 1px solid;
+    box-sizing: border-box;
+    font-size: 30px;
+}
+#freqList, #composed {   /* large elements */
+    padding: 5px; width: 300px; border: 1px solid;
+    box-sizing: border-box;
+    font-size: 18px;
+}
+#waveTypes > label {   /* wave type radio buttons */
+    font-size: 18px;
+    font-weight: bold;
+}
+</style>
+</head>
+<body>
+<div class="grid-container" aria-label="Work">
+    <div class="grid-header">
+        <h2>Equal Temperament Generator &amp; Basic Composer</h2>
+    </div>
+    <div class="grid-srtfreq">
+        <h2><label for="startFreq">Start Frequency:</label></h2>
+        <input type="text" id="startFreq" value="440"/>
+    </div>
+    <div class="grid-endfreq">  
+        <h2><label for="endFreq">End Frequency:</label></h2>
+        <input type="text" id="endFreq"  value="880"/>
+    </div>
+    <div class="grid-freqpal">
+        <h2><label for="freqList">Frequency Palette:</label></h2>
+        <select id="freqList" size="5">
+            <option disabled>Empty</option>
+        </select>
+    </div>
+    <div class="grid-composed">
+        <h2><label for="composed">JSON Array Composer:</label></h2>
+        <textarea id="composed" rows="5">[
+[0],
+[4],
+[7],
+[0, 4, 7]
+]</textarea>
+    </div>
+    <div class="grid-division">
+        <h2><label for="division">Division:</label></h2>
+        <input type="text" id="division" maxlength="5" value="12"/>
+    </div>
+    <div class="grid-duration">
+        <h2><label for="duration">Note Duration (seconds):</label></h2>
+        <input type="text" id="duration" value="0.75"/>
+    </div>
+    <div class="grid-ctrlpal">
+        <button id="gen" onclick="generateFreq()" aria-label="Generate Palette">Generate</button>
+        <br/>
+        <button id="clear" onclick="clearFreq()" aria-label="Clear Palette">Clear</button>
+    </div>
+    <div class="grid-wavetype">    
+        <h2>Wave Type:</h2>
+        <div id="waveTypes">
+            <input type="radio" name="waveType" id="sine" value="sine" checked="checked"/><label for="sine">Sine</label><br/>
+            <input type="radio" name="waveType" id="square" value="square"/><label for="square">Square</label><br/>
+            <input type="radio" name="waveType" id="triangle" value="triangle"/><label for="triangle">Triangle</label><br/>
+            <input type="radio" name="waveType" id="sawtooth" value="sawtooth"/><label for="sawtooth">Sawtooth</label><br/>
+        </div>
+    </div>
+    <div class="grid-grbfreq">
+        <button id="copy" onclick="grabFreq()"><label for="grabbedFreq">Grab Selected</label></button>
+        <br/>
+        <input type="text" id="grabbedFreq"/>
+    </div>
+    <div class="grid-ctrlcomp">
+        <button id="play" onclick="playNotes()" aria-label="Play Composition">Play</button>
+        <br/>
+        <button id="stop" aria-label="Stop Composition">Stop</button>
+    </div>
+</div>            
+</body>
+</html>
