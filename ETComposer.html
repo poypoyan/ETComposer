@@ -62,7 +62,8 @@ function clearFreq(){
 }
 function grabFreq(){
     var list = document.getElementById('freqList');
-    document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
+    if(list.selectedIndex >= 0)   // no more debug error
+        document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
 }
 function playNotes(){
     // get needed inputs 
@@ -99,13 +100,20 @@ function playNotes(){
         document.getElementById('play').disabled = false;
         return;
     }
-    var currFreq;
+    var currFreq, untieIdx;
+    var untieDur = 95;   // untie note duration percentage (must be close to and less than 100)
     try {
         // add frequency to sounds to play
         for(var i = 0; i < compArr.length; i++){
             for(var j = 0; j < oscArr.length; j++){
                 if(j < compArr[i].length){
-                    currFreq = parseFloat(list[compArr[i][j]].value);
+                    untieIdx = compArr[i][j] - 0.9;   // untie note / ".9" syntax
+                    if(Number.isInteger(untieIdx)){   // is untie applied?
+                        currFreq = parseFloat(list[untieIdx].value);
+                        oscArr[j].frequency.setValueAtTime(0, context.currentTime + (i + untieDur / 100) * duration);
+                    } else {
+                        currFreq = parseFloat(list[compArr[i][j]].value);
+                    }
                     oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + i * duration);
                 } else {
                     oscArr[j].frequency.setValueAtTime(0, context.currentTime + i * duration);
@@ -257,10 +265,10 @@ h2 {   /* usual texts */
     <div class="grid-composed">
         <h2><label for="composed">JSON Array Composer:</label></h2>
         <textarea id="composed" rows="5">[
-[0],
-[4],
-[7],
-[0, 4, 7]
+[0], [4], [7],
+[0, 4, 7], [],
+[5], [5], [5], [],
+[5.9], [5.9], [5.9]
 ]</textarea>
     </div>
     <div class="grid-division">
