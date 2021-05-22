@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
 <meta charset="utf-8"/>
 <!--
@@ -244,7 +244,7 @@ h2 {   /* usual texts */
 </style>
 </head>
 <body>
-<div class="grid-container" aria-label="Work">
+<div class="grid-container">
     <div class="grid-header">
         <h2>Equal Temperament Generator &amp; Basic Composer</h2>
     </div>
@@ -294,7 +294,7 @@ h2 {   /* usual texts */
         </div>
     </div>
     <div class="grid-grbfreq">
-        <button id="copy" onclick="grabFreq()"><label for="grabbedFreq">Grab Selected</label></button>
+        <button id="copy" onclick="grabFreq()" aria-label="Grab Selected">Grab Selected</button>
         <br/>
         <input type="text" id="grabbedFreq"/>
     </div>
@@ -303,6 +303,6 @@ h2 {   /* usual texts */
         <br/>
         <button id="stop" aria-label="Stop Composition">Stop</button>
     </div>
-</div>            
+</div>
 </body>
 </html>
