@@ -105,6 +105,7 @@ function playNotes(){
     try {
         // add frequency to sounds to play
         for(var i = 0; i < compArr.length; i++){
+            if(!Array.isArray(compArr[i])) throw new TypeError();   // also invalid index
             for(var j = 0; j < oscArr.length; j++){
                 if(j < compArr[i].length){
                     untieIdx = compArr[i][j] - 0.9;   // untie note / ".9" syntax
