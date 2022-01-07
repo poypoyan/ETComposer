@@ -36,7 +36,7 @@ function generateFreq(){
     var division = parseInt(document.getElementById('division').value);
     // error check the numerical values
     if(!(startFreq > 0 && endFreq > 0 && division >= 0)){
-        alert("Error: found an invalid value.");
+        alert('Error: found an invalid value.');
         return;
     }
     // setup the frequencies
@@ -44,7 +44,7 @@ function generateFreq(){
     document.getElementById('freqList').options.length = 0;   // clear list box
     for(var i = 0; i < (division + 1); i++){
         // add frequency to list box
-        var opt = document.createElement("option");
+        var opt = document.createElement('option');
         opt.value = currFreq;
         opt.text = i + ": " + currFreq;
         document.getElementById('freqList').add(opt);
@@ -53,40 +53,34 @@ function generateFreq(){
     }
 }
 function clearFreq(){
-    document.getElementById('freqList').options.length = 0;   // clear list box
-    // bring back the original 'empty' option
-    var opt = document.createElement("option");
+    // clear list box
+    document.getElementById('freqList').options.length = 0;
+    var opt = document.createElement('option');   // bring back the original 'empty' option
     opt.text = "Empty"; opt.disabled = true;
     document.getElementById('freqList').add(opt);
-    document.getElementById('grabbedFreq').value = "";   // clear grabbedFreq also;
+    // clear grabbedFreq
+    document.getElementById('grabbedFreq').value = '';
 }
 function grabFreq(){
     var list = document.getElementById('freqList');
     if(list.selectedIndex >= 0)   // no more debug error
         document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
 }
-function playNotes(){
+function setNotes(context){
     // get needed inputs 
     var duration = parseFloat(document.getElementById('duration').value);
     var composed = document.getElementById('composed').value;
     var list = document.getElementById('freqList');
     // error check the numerical values
-    if(!(duration > 0)){
-        alert("Error: 'duration' value is invalid.");
-        return;
-    }
-    // abort if freqList is clear
-    if(list.options.length == 0) return;
-    // if proceed, disable play button
-    document.getElementById('play').disabled = true;
+    if(!(duration > 0)) throw('Error: \'duration\' value is invalid.');
+    // error check if freqList is clear
+    if(list[0].value == "Empty") throw('Empty frequency list.');
     // get selected waveType
     var waveType, radios = document.getElementsByName('waveType');
     for (var i = 0; i < radios.length; i++){
-        if (radios[i].checked) waveType =  radios[i].value;
+        if (radios[i].checked) waveType = radios[i].value;
     }
-
-    // setup web audio API
-    var context = new (window.AudioContext || window.webkitAudioContext)();
+    // setup oscillators and get wave type
     var oscArr = new Array(list.options.length);
     for(var i = 0; i < oscArr.length; i++){
         oscArr[i] = context.createOscillator();
@@ -96,9 +90,7 @@ function playNotes(){
     try {
         var compArr = JSON.parse(composed);
     } catch(e){
-        alert("JSON syntax error.");
-        document.getElementById('play').disabled = false;
-        return;
+        throw('JSON syntax error.');
     }
     var currFreq, untieIdx;
     var untieDur = 95;   // untie note duration percentage (must be close to and less than 100)
@@ -122,29 +114,101 @@ function playNotes(){
             }
         }
     } catch(e){
-        alert("Error: found an invalid index.");
-        document.getElementById('play').disabled = false;
-        return;
+        throw('Error: found an invalid index.');
     }
-
     // setup sound volume
     var gainNode = context.createGain();
     gainNode.gain.value = 0.1;   // low volume
-    // connect nodes and start playing!
+    // connect nodes and return objects
     for(let oscIter of oscArr) oscIter.connect(gainNode);
+    return [gainNode, oscArr, compArr.length, duration];
+}
+function playNotes(){
+    disableButtons(true);
+    // setup web audio API
+    var context = new (window.AudioContext || window.webkitAudioContext)();
+    // set notes according to composer
+    try {
+        var setNotesOutput = setNotes(context);
+    } catch(e){
+        alert(e);
+        disableButtons(false);
+        return;
+    }
+    var gainNode = setNotesOutput[0];
+    var oscArr = setNotesOutput[1];
+    var compLength = setNotesOutput[2];
+    var duration = setNotesOutput[3];
+    // play now!
     gainNode.connect(context.destination);
     for(let oscIter of oscArr) oscIter.start();
-
-    // once play is completed, reenable play button
-    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compArr.length * duration);
+    // once play is completed, reenable play and record button
+    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
     oscArr[0].onended = function(e){
-        document.getElementById('play').disabled = false;
+        disableButtons(false);
     }
-    // if stop button is clicked, then stop playing and reenable play button
-    document.getElementById('stop').onclick=function(e){
+    // if stop button is clicked, then stop playing and reenable play and record button
+    document.getElementById('stop').onclick = function(e){
         for(let oscIter of oscArr) oscIter.stop();
-        document.getElementById('play').disabled = false;
+        disableButtons(false);
     }
+}
+function recordNotes(){
+    disableButtons(true);
+    // setup web audio API
+    var context = new (window.AudioContext || window.webkitAudioContext)();
+    // set notes according to composer
+    try {
+        var setNotesOutput = setNotes(context);
+    } catch(e){
+        alert(e);
+        disableButtons(false);
+        return;
+    }
+    var gainNode = setNotesOutput[0];
+    var oscArr = setNotesOutput[1];
+    var compLength = setNotesOutput[2];
+    var duration = setNotesOutput[3];
+    // clear audioPlayer
+    var record = document.getElementById('audioPlayer').src;
+    if(record != ''){
+        URL.revokeObjectURL(record);
+        document.getElementById('audioPlayer').removeAttribute('src');
+    }
+    // setup media recorder
+    var chunks = [];
+    var dest = context.createMediaStreamDestination();
+    mediaRecorder = new MediaRecorder(dest.stream);
+    mediaRecorder.ondataavailable = function(evt){
+        chunks.push(evt.data);
+    };
+    mediaRecorder.onstop = function(evt){
+        let blob = new Blob(chunks, {'type': 'audio/ogg; codecs=opus'});
+        document.getElementById('audioPlayer').src = URL.createObjectURL(blob);
+    };
+    // record now!
+    gainNode.connect(dest);
+    mediaRecorder.start();
+    for(let oscIter of oscArr) oscIter.start();
+    // once play is completed, reenable play and record button
+    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
+    oscArr[0].onended = function(e){
+        // mediaRecorder.requestData();
+        mediaRecorder.stop();
+        disableButtons(false);
+    }
+    // if stop button is clicked, then stop playing and reenable play and record button
+    document.getElementById('stop').onclick = function(e){
+        for(let oscIter of oscArr) oscIter.stop();
+        mediaRecorder.requestData();
+        mediaRecorder.stop();
+        disableButtons(false);
+    }
+}
+function disableButtons(bool){
+    // disable/reenable play and record button
+    document.getElementById('play').disabled = bool;
+    document.getElementById('record').disabled = bool;
 }
 </script>
 <style>
@@ -212,8 +276,9 @@ table {
 .grid-wavetype { border: 1px solid; grid-area: 4/2/5/3; }
 .grid-grbfreq { border: 1px solid; grid-area: 4/3/5/4; }
 .grid-ctrlcomp { border: 1px solid; grid-area: 4/4/5/5; }
+.grid-record { border: 1px solid; grid-area: 5/4/6/5; }
 /* per element types */
-h2, #gen, #clear, #play, #stop, #copy,
+h2, #gen, #clear, #play, #stop, #copy, #record,
 #startFreq, #endFreq, #division, #duration, #grabbedFreq,
 #freqList, #composed, #waveTypes {
     margin: 5px;
@@ -223,7 +288,7 @@ h2 {   /* usual texts */
     font-size: 25px;
     font-weight: bold;
 }
-#gen, #clear, #play, #stop, #copy {   /* buttons */
+#gen, #clear, #play, #stop, #copy, #record {   /* buttons */
     padding: 5px; width: 300px; border: 1px solid;
     font-size: 30px;
     font-weight: bold;
@@ -237,6 +302,9 @@ h2 {   /* usual texts */
     padding: 5px; width: 300px; border: 1px solid;
     box-sizing: border-box;
     font-size: 18px;
+}
+#audioPlayer {   /* audio player */
+    padding: 5px; width: 300px;
 }
 #waveTypes > label {   /* wave type radio buttons */
     font-size: 18px;
@@ -303,6 +371,11 @@ h2 {   /* usual texts */
         <button id="play" onclick="playNotes()" aria-label="Play Composition">Play</button>
         <br/>
         <button id="stop" aria-label="Stop Composition">Stop</button>
+    </div>
+    <div class="grid-record">
+        <button id="record" onclick="recordNotes()" aria-label="Record Composition">Record</button>
+        <br/>
+        <audio controls id="audioPlayer" aria-label="Audio Player"></audio>
     </div>
 </div>
 </body>
