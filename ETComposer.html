@@ -69,10 +69,12 @@ function grabFreq(){
 function setNotes(context){
     // get needed inputs 
     var duration = parseFloat(document.getElementById('duration').value);
+    var gain = parseFloat(document.getElementById('gain').value);
     var composed = document.getElementById('composed').value;
     var list = document.getElementById('freqList');
     // error check the numerical values
-    if(!(duration > 0)) throw('Error: \'duration\' value is invalid.');
+    if(duration <= 0) throw('Error: \'duration\' value is invalid.');
+    if(Number.isNaN(gain)) throw('Error: \'gain\' value is invalid.');
     // error check if freqList is clear
     if(list[0].value == "Empty") throw('Empty frequency list.');
     // get selected waveType
@@ -118,7 +120,7 @@ function setNotes(context){
     }
     // setup sound volume
     var gainNode = context.createGain();
-    gainNode.gain.value = 0.1;   // low volume
+    gainNode.gain.value = gain;
     // connect nodes and return objects
     for(let oscIter of oscArr) oscIter.connect(gainNode);
     return [gainNode, oscArr, compArr.length, duration];
@@ -276,10 +278,10 @@ table {
 .grid-wavetype { border: 1px solid; grid-area: 4/2/5/3; }
 .grid-grbfreq { border: 1px solid; grid-area: 4/3/5/4; }
 .grid-ctrlcomp { border: 1px solid; grid-area: 4/4/5/5; }
+.grid-gain { border: 1px solid; grid-area: 5/1/6/2; }
 .grid-record { border: 1px solid; grid-area: 5/4/6/5; }
 /* per element types */
-h2, #gen, #clear, #play, #stop, #copy, #record,
-#startFreq, #endFreq, #division, #duration, #grabbedFreq,
+h2, button, input[type='text'],
 #freqList, #composed, #waveTypes {
     margin: 5px;
     font-family: Calibri,Candara,Segoe,Segoe UI,Optima,Arial,sans-serif;
@@ -288,12 +290,12 @@ h2 {   /* usual texts */
     font-size: 25px;
     font-weight: bold;
 }
-#gen, #clear, #play, #stop, #copy, #record {   /* buttons */
+button {   /* buttons */
     padding: 5px; width: 300px; border: 1px solid;
     font-size: 30px;
     font-weight: bold;
 }
-#startFreq, #endFreq, #division, #duration, #grabbedFreq {   /* textboxes */
+input[type='text'] {   /* textboxes */
     padding: 5px; width: 300px; border: 1px solid;
     box-sizing: border-box;
     font-size: 30px;
@@ -371,6 +373,11 @@ h2 {   /* usual texts */
         <button id="play" onclick="playNotes()" aria-label="Play Composition">Play</button>
         <br/>
         <button id="stop" aria-label="Stop Composition">Stop</button>
+    </div>
+    <div class="grid-gain">
+        <h2><label for="gain">Gain ("Volume"):</label></h2>
+        <br/>
+        <input type="text" id="gain" value="1.0"/>
     </div>
     <div class="grid-record">
         <button id="record" onclick="recordNotes()" aria-label="Record Composition">Record</button>
