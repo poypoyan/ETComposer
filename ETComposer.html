@@ -94,21 +94,17 @@ function setNotes(context){
     } catch(e){
         throw('JSON syntax error.');
     }
+    // setup composition to oscillators
     var currFreq, untieIdx;
-    var untieDur = 95;   // untie note duration percentage (must be close to and less than 100)
     try {
-        // add frequency to sounds to play
         for(var i = 0; i < compArr.length; i++){
             if(!Array.isArray(compArr[i])) throw new TypeError();   // also invalid index
             for(var j = 0; j < oscArr.length; j++){
                 if(j < compArr[i].length){
-                    untieIdx = compArr[i][j] - 0.9;   // untie note / ".9" syntax
-                    if(Number.isInteger(untieIdx)){   // is untie applied?
-                        currFreq = parseFloat(list[untieIdx].value);
-                        oscArr[j].frequency.setValueAtTime(0, context.currentTime + (i + untieDur / 100) * duration);
-                    } else {
-                        currFreq = parseFloat(list[compArr[i][j]].value);
-                    }
+                    currPitch = Math.trunc(compArr[i][j]);
+                    untieDur = compArr[i][j] - currPitch;
+                    if(untieDur != 0) oscArr[j].frequency.setValueAtTime(0, context.currentTime + (i + untieDur) * duration);
+                    currFreq = parseFloat(list[currPitch].value);
                     oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + i * duration);
                 } else {
                     oscArr[j].frequency.setValueAtTime(0, context.currentTime + i * duration);
@@ -146,11 +142,11 @@ function playNotes(){
     for(let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
     for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
-    oscArr[0].onended = function(e){
+    oscArr[0].onended = function(){
         disableButtons(false);
     }
     // if stop button is clicked, then stop playing and reenable play and record button
-    document.getElementById('stop').onclick = function(e){
+    document.getElementById('stop').onclick = function(){
         for(let oscIter of oscArr) oscIter.stop();
         disableButtons(false);
     }
@@ -184,7 +180,7 @@ function recordNotes(){
     mediaRecorder.ondataavailable = function(evt){
         chunks.push(evt.data);
     };
-    mediaRecorder.onstop = function(evt){
+    mediaRecorder.onstop = function(){
         let blob = new Blob(chunks, {'type': 'audio/ogg; codecs=opus'});
         document.getElementById('audioPlayer').src = URL.createObjectURL(blob);
     };
@@ -194,13 +190,13 @@ function recordNotes(){
     for(let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
     for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
-    oscArr[0].onended = function(e){
+    oscArr[0].onended = function(){
         // mediaRecorder.requestData();
         mediaRecorder.stop();
         disableButtons(false);
     }
     // if stop button is clicked, then stop playing and reenable play and record button
-    document.getElementById('stop').onclick = function(e){
+    document.getElementById('stop').onclick = function(){
         for(let oscIter of oscArr) oscIter.stop();
         mediaRecorder.requestData();
         mediaRecorder.stop();
@@ -305,12 +301,12 @@ input[type='text'] {   /* textboxes */
     box-sizing: border-box;
     font-size: 18px;
 }
-#audioPlayer {   /* audio player */
-    padding: 5px; width: 300px;
-}
 #waveTypes > label {   /* wave type radio buttons */
     font-size: 18px;
     font-weight: bold;
+}
+#audioPlayer {   /* audio player */
+    padding: 5px; width: 300px;
 }
 </style>
 </head>
@@ -339,7 +335,7 @@ input[type='text'] {   /* textboxes */
 [0], [4], [7],
 [0, 4, 7], [],
 [5], [5], [5], [],
-[5.9], [5.9], [5.9]
+[5.95], [5.95], [5.95]
 ]</textarea>
     </div>
     <div class="grid-division">
