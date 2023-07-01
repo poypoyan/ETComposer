@@ -8,20 +8,20 @@ Distributed under the MIT software license. See the accompanying file LICENSE or
 -->
 <title>Equal Temperament Stuff</title>
 <script>
-function generateFreq(){
+function generateFreq() {
     // get values
     var startFreq = parseFloat(document.getElementById('startFreq').value);
     var endFreq = parseFloat(document.getElementById('endFreq').value);
     var division = parseInt(document.getElementById('division').value);
     // error check the numerical values
-    if(!(startFreq > 0 && endFreq > 0 && division >= 0)){
+    if(!(startFreq > 0 && endFreq > 0 && division >= 0)) {
         alert('Error: found an invalid value.');
         return;
     }
     // setup the frequencies
     var currFreq = startFreq;
     document.getElementById('freqList').options.length = 0;   // clear list box
-    for(var i = 0; i < (division + 1); i++){
+    for(var i = 0; i < (division + 1); i++) {
         // add frequency to list box
         var opt = document.createElement('option');
         opt.value = currFreq;
@@ -31,7 +31,7 @@ function generateFreq(){
         currFreq = (i == division - 1) ? endFreq : currFreq * Math.pow(endFreq / startFreq, 1 / division);
     }
 }
-function clearFreq(){
+function clearFreq() {
     // clear list box
     document.getElementById('freqList').options.length = 0;
     var opt = document.createElement('option');   // bring back the original 'empty' option
@@ -40,12 +40,12 @@ function clearFreq(){
     // clear grabbedFreq
     document.getElementById('grabbedFreq').value = '';
 }
-function grabFreq(){
+function grabFreq() {
     var list = document.getElementById('freqList');
     if(list.selectedIndex >= 0)   // no more debug error
         document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
 }
-function setNotes(context){
+function setNotes(context) {
     // get needed inputs 
     var duration = parseFloat(document.getElementById('duration').value);
     var gain = parseFloat(document.getElementById('gain').value);
@@ -58,28 +58,28 @@ function setNotes(context){
     if(list[0].value == "Empty") throw('Empty frequency list.');
     // get selected waveType
     var waveType, radios = document.getElementsByName('waveType');
-    for (var i = 0; i < radios.length; i++){
+    for (var i = 0; i < radios.length; i++) {
         if (radios[i].checked) waveType = radios[i].value;
     }
     // setup oscillators and get wave type
     var oscArr = new Array(list.options.length);
-    for(var i = 0; i < oscArr.length; i++){
+    for(var i = 0; i < oscArr.length; i++) {
         oscArr[i] = context.createOscillator();
         oscArr[i].type = waveType;
     }
     // parse JSON
     try {
         var compArr = JSON.parse(composed);
-    } catch(e){
+    } catch(e) {
         throw('JSON syntax error.');
     }
     // setup composition to oscillators
     var currFreq, untieIdx;
     try {
-        for(var i = 0; i < compArr.length; i++){
+        for(var i = 0; i < compArr.length; i++) {
             if(!Array.isArray(compArr[i])) throw new TypeError();   // also invalid index
-            for(var j = 0; j < oscArr.length; j++){
-                if(j < compArr[i].length){
+            for(var j = 0; j < oscArr.length; j++) {
+                if(j < compArr[i].length) {
                     currPitch = Math.trunc(compArr[i][j]);
                     untieDur = compArr[i][j] - currPitch;
                     if(untieDur != 0) oscArr[j].frequency.setValueAtTime(0, context.currentTime + (i + untieDur) * duration);
@@ -90,7 +90,7 @@ function setNotes(context){
                 }
             }
         }
-    } catch(e){
+    } catch(e) {
         throw('Error: found an invalid index.');
     }
     // setup sound volume
@@ -100,14 +100,14 @@ function setNotes(context){
     for(let oscIter of oscArr) oscIter.connect(gainNode);
     return [gainNode, oscArr, compArr.length, duration];
 }
-function playNotes(){
+function playNotes() {
     disableButtons(true);
     // setup web audio API
     var context = new (window.AudioContext || window.webkitAudioContext)();
     // set notes according to composer
     try {
         var setNotesOutput = setNotes(context);
-    } catch(e){
+    } catch(e) {
         alert(e);
         disableButtons(false);
         return;
@@ -121,23 +121,23 @@ function playNotes(){
     for(let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
     for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
-    oscArr[0].onended = function(){
+    oscArr[0].onended = function() {
         disableButtons(false);
     }
     // if stop button is clicked, then stop playing and reenable play and record button
-    document.getElementById('stop').onclick = function(){
+    document.getElementById('stop').onclick = function() {
         for(let oscIter of oscArr) oscIter.stop();
         disableButtons(false);
     }
 }
-function recordNotes(){
+function recordNotes() {
     disableButtons(true);
     // setup web audio API
     var context = new (window.AudioContext || window.webkitAudioContext)();
     // set notes according to composer
     try {
         var setNotesOutput = setNotes(context);
-    } catch(e){
+    } catch(e) {
         alert(e);
         disableButtons(false);
         return;
@@ -148,7 +148,7 @@ function recordNotes(){
     var duration = setNotesOutput[3];
     // clear audioPlayer
     var record = document.getElementById('audioPlayer').src;
-    if(record != ''){
+    if(record != '') {
         URL.revokeObjectURL(record);
         document.getElementById('audioPlayer').removeAttribute('src');
     }
@@ -156,10 +156,10 @@ function recordNotes(){
     var chunks = [];
     var dest = context.createMediaStreamDestination();
     mediaRecorder = new MediaRecorder(dest.stream);
-    mediaRecorder.ondataavailable = function(evt){
+    mediaRecorder.ondataavailable = function(evt) {
         chunks.push(evt.data);
     };
-    mediaRecorder.onstop = function(){
+    mediaRecorder.onstop = function() {
         let blob = new Blob(chunks, {'type': 'audio/ogg; codecs=opus'});
         document.getElementById('audioPlayer').src = URL.createObjectURL(blob);
     };
@@ -169,20 +169,20 @@ function recordNotes(){
     for(let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
     for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
-    oscArr[0].onended = function(){
+    oscArr[0].onended = function() {
         // mediaRecorder.requestData();
         mediaRecorder.stop();
         disableButtons(false);
     }
     // if stop button is clicked, then stop playing and reenable play and record button
-    document.getElementById('stop').onclick = function(){
+    document.getElementById('stop').onclick = function() {
         for(let oscIter of oscArr) oscIter.stop();
         mediaRecorder.requestData();
         mediaRecorder.stop();
         disableButtons(false);
     }
 }
-function disableButtons(bool){
+function disableButtons(bool) {
     // disable/reenable play and record button
     document.getElementById('play').disabled = bool;
     document.getElementById('record').disabled = bool;
