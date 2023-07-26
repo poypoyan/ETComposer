@@ -1,0 +1,46 @@
+Starting Config:
+Start: 146.66666666666666666666666666667
+End: 3960
+Div: 39
+Dur: 0.2
+
+Basic Intervals:
+* Tritone = +4
+* Major sixth = +6
+
+Ang aking "Mayor" na eskala (19 Abr 2023):
+[
+[0],[2],[3],[5],[6],[9],[10],[12],[13],[],
+[0],[2,0],[3,0],[5,0],[6,0],[9,0],[10,0],[12,0],[13,0]
+]
+
+Ang aking "Minor" na eskala (20 Abr 2023): 
+[
+[0], [2], [3], [4], [7], [9], [10], [11], [13],[],
+[0],[2,0],[3,0],[4,0],[7,0],[9,0],[10,0],[11,0],[13,0]
+]
+
+Oo, hindi ang mga iyan moda ng isa't isa! Subalit may karanasan
+na ako sa paggamit ng dalawang iyan.
+
+
+Mga rásyo ng mayor na eskala:
+
+3/3 = 0
+5/3 = 6
+7/3 = 10
+
+5/3 * 5/3 = 25/9 = 12
+5/7 * 5/3 = 25/21 = 2
+5/7 * 5/7 = 75/49 = 5
+
+3/7 = 3
+5/7 = 9
+7/7 = 0
+
+Kumbaga, inalis ang mga rásyong kalima:
+
+9/5 = 7
+5/5 = 0
+7/5 = 4
+
