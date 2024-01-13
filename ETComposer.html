@@ -14,48 +14,46 @@ function generateFreq() {
     var endFreq = parseFloat(document.getElementById('endFreq').value);
     var division = parseInt(document.getElementById('division').value);
     // error check the numerical values
-    if(!(startFreq > 0 && endFreq > 0 && division >= 0)) {
-        alert('Error: found an invalid value.');
+    if (!(startFreq > 0 && endFreq > 0 && division >= 0)) {
+        alert('Found an invalid value in inputs.');
         return;
     }
     // setup the frequencies
     var currFreq = startFreq;
     document.getElementById('freqList').options.length = 0;   // clear list box
-    for(var i = 0; i < (division + 1); i++) {
+    for (var i = 0; i < (division + 1); i++) {
         // add frequency to list box
         var opt = document.createElement('option');
         opt.value = currFreq;
         opt.text = i + ": " + currFreq;
         document.getElementById('freqList').add(opt);
         // next frequency (last frequency is set to endFreq)
-        currFreq = (i == division - 1) ? endFreq : currFreq * Math.pow(endFreq / startFreq, 1 / division);
+        currFreq = (i === division - 1) ? endFreq : currFreq * Math.pow(endFreq / startFreq, 1 / division);
     }
 }
 function clearFreq() {
     // clear list box
     document.getElementById('freqList').options.length = 0;
     var opt = document.createElement('option');   // bring back the original 'empty' option
-    opt.text = "Empty"; opt.disabled = true;
+    opt.text = 'Empty'; opt.disabled = true;
     document.getElementById('freqList').add(opt);
     // clear grabbedFreq
     document.getElementById('grabbedFreq').value = '';
 }
 function grabFreq() {
     var list = document.getElementById('freqList');
-    if(list.selectedIndex >= 0)   // no more debug error
+    if (list.selectedIndex >= 0)   // no more debug error
         document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
 }
 function setNotes(context) {
-    // get needed inputs 
-    var duration = parseFloat(document.getElementById('duration').value);
+    // get needed inputs
     var gain = parseFloat(document.getElementById('gain').value);
     var composed = document.getElementById('composed').value;
     var list = document.getElementById('freqList');
     // error check the numerical values
-    if(duration <= 0) throw('Error: \'duration\' value is invalid.');
-    if(Number.isNaN(gain)) throw('Error: \'gain\' value is invalid.');
+    if (Number.isNaN(gain)) throw('\'Gain\' value is invalid.');
     // error check if freqList is clear
-    if(list[0].value == "Empty") throw('Empty frequency list.');
+    if (list[0].value === 'Empty') throw('Empty frequency list.');
     // get selected waveType
     var waveType, radios = document.getElementsByName('waveType');
     for (var i = 0; i < radios.length; i++) {
@@ -63,7 +61,7 @@ function setNotes(context) {
     }
     // setup oscillators and get wave type
     var oscArr = new Array(list.options.length);
-    for(var i = 0; i < oscArr.length; i++) {
+    for (var i = 0; i < oscArr.length; i++) {
         oscArr[i] = context.createOscillator();
         oscArr[i].type = waveType;
     }
@@ -74,31 +72,38 @@ function setNotes(context) {
         throw('JSON syntax error.');
     }
     // setup composition to oscillators
-    var currFreq, untieIdx;
-    try {
-        for(var i = 0; i < compArr.length; i++) {
-            if(!Array.isArray(compArr[i])) throw new TypeError();   // also invalid index
-            for(var j = 0; j < oscArr.length; j++) {
-                if(j < compArr[i].length) {
-                    currPitch = Math.trunc(compArr[i][j]);
-                    untieDur = compArr[i][j] - currPitch;
-                    if(untieDur != 0) oscArr[j].frequency.setValueAtTime(0, context.currentTime + (i + untieDur) * duration);
-                    currFreq = parseFloat(list[currPitch].value);
-                    oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + i * duration);
-                } else {
-                    oscArr[j].frequency.setValueAtTime(0, context.currentTime + i * duration);
+    var currFreq, currDur, totalDur = 0, untieIdx;
+    if (!Array.isArray(compArr[0]) || compArr[0][0] !== 'p') throw('Initial property not set.');
+    for (var i = 0; i < compArr.length; i++) {
+        if (!Array.isArray(compArr[i])) throw(`Index ${i} is not an Array.`);
+        if (compArr[i][0] === 'p') {   // property set
+            currDur = parseFloat(compArr[i][1]);
+            continue;
+        } else {   // note set
+            try {
+                for (var j = 0; j < oscArr.length; j++) {
+                    if (j < compArr[i].length) {
+                        currPitch = Math.trunc(compArr[i][j]);
+                        untieDur = compArr[i][j] - currPitch;
+                        if (untieDur != 0) oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur + (untieDur * currDur));
+                        currFreq = parseFloat(list[currPitch].value);
+                        oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + totalDur);
+                    } else {
+                        oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur);
+                    }
                 }
+                totalDur += currDur;
+            } catch(e) {
+                throw(`Index ${i} is invalid.`);
             }
         }
-    } catch(e) {
-        throw('Error: found an invalid index.');
     }
     // setup sound volume
     var gainNode = context.createGain();
     gainNode.gain.value = gain;
     // connect nodes and return objects
-    for(let oscIter of oscArr) oscIter.connect(gainNode);
-    return [gainNode, oscArr, compArr.length, duration];
+    for (let oscIter of oscArr) oscIter.connect(gainNode);
+    return [gainNode, oscArr, totalDur];
 }
 function playNotes() {
     disableButtons(true);
@@ -114,19 +119,18 @@ function playNotes() {
     }
     var gainNode = setNotesOutput[0];
     var oscArr = setNotesOutput[1];
-    var compLength = setNotesOutput[2];
-    var duration = setNotesOutput[3];
+    var duration = setNotesOutput[2];
     // play now!
     gainNode.connect(context.destination);
-    for(let oscIter of oscArr) oscIter.start();
+    for (let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
-    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
+    for (let oscIter of oscArr) oscIter.stop(context.currentTime + duration);
     oscArr[0].onended = function() {
         disableButtons(false);
     }
     // if stop button is clicked, then stop playing and reenable play and record button
     document.getElementById('stop').onclick = function() {
-        for(let oscIter of oscArr) oscIter.stop();
+        for (let oscIter of oscArr) oscIter.stop();
         disableButtons(false);
     }
 }
@@ -144,11 +148,10 @@ function recordNotes() {
     }
     var gainNode = setNotesOutput[0];
     var oscArr = setNotesOutput[1];
-    var compLength = setNotesOutput[2];
-    var duration = setNotesOutput[3];
+    var duration = setNotesOutput[2];
     // clear audioPlayer
     var record = document.getElementById('audioPlayer').src;
-    if(record != '') {
+    if (record != '') {
         URL.revokeObjectURL(record);
         document.getElementById('audioPlayer').removeAttribute('src');
     }
@@ -166,9 +169,9 @@ function recordNotes() {
     // record now!
     gainNode.connect(dest);
     mediaRecorder.start();
-    for(let oscIter of oscArr) oscIter.start();
+    for (let oscIter of oscArr) oscIter.start();
     // once play is completed, reenable play and record button
-    for(let oscIter of oscArr) oscIter.stop(context.currentTime + compLength * duration);
+    for (let oscIter of oscArr) oscIter.stop(context.currentTime + duration);
     oscArr[0].onended = function() {
         // mediaRecorder.requestData();
         mediaRecorder.stop();
@@ -176,7 +179,7 @@ function recordNotes() {
     }
     // if stop button is clicked, then stop playing and reenable play and record button
     document.getElementById('stop').onclick = function() {
-        for(let oscIter of oscArr) oscIter.stop();
+        for (let oscIter of oscArr) oscIter.stop();
         mediaRecorder.requestData();
         mediaRecorder.stop();
         disableButtons(false);
@@ -248,12 +251,11 @@ table {
 .grid-freqpal { border: 1px solid; grid-area: 2/3/4/4; }
 .grid-composed { border: 1px solid; grid-area: 2/4/4/5; }
 .grid-division { border: 1px solid; grid-area: 3/1/4/2; }
-.grid-duration { border: 1px solid; grid-area: 3/2/4/3; }
+.grid-gain { border: 1px solid; grid-area: 3/2/4/3; }
 .grid-ctrlpal { border: 1px solid; grid-area: 4/1/5/2; }
 .grid-wavetype { border: 1px solid; grid-area: 4/2/5/3; }
 .grid-grbfreq { border: 1px solid; grid-area: 4/3/5/4; }
 .grid-ctrlcomp { border: 1px solid; grid-area: 4/4/5/5; }
-.grid-gain { border: 1px solid; grid-area: 5/1/6/2; }
 .grid-record { border: 1px solid; grid-area: 5/4/6/5; }
 /* per element types */
 h2, button, input[type='text'],
@@ -312,6 +314,12 @@ input[type='text'] {   /* textboxes */
     <div class="grid-composed">
         <h2><label for="composed">JSON Array Composer:</label></h2>
         <textarea id="composed" rows="5">[
+["p", 0.75],
+[0], [4], [7],
+[0, 4, 7], [],
+[5], [5], [5], [],
+[5.95], [5.95], [5.95],
+["p", 0.25],
 [0], [4], [7],
 [0, 4, 7], [],
 [5], [5], [5], [],
@@ -322,9 +330,9 @@ input[type='text'] {   /* textboxes */
         <h2><label for="division">Division:</label></h2>
         <input type="text" id="division" maxlength="5" value="12"/>
     </div>
-    <div class="grid-duration">
-        <h2><label for="duration">Note Duration (seconds):</label></h2>
-        <input type="text" id="duration" value="0.75"/>
+    <div class="grid-gain">
+        <h2><label for="gain">Gain ("Volume"):</label></h2>
+        <input type="text" id="gain" value="0.1"/>
     </div>
     <div class="grid-ctrlpal">
         <button id="gen" onclick="generateFreq()" aria-label="Generate Palette">Generate</button>
@@ -349,11 +357,6 @@ input[type='text'] {   /* textboxes */
         <button id="play" onclick="playNotes()" aria-label="Play Composition">Play</button>
         <br/>
         <button id="stop" aria-label="Stop Composition">Stop</button>
-    </div>
-    <div class="grid-gain">
-        <h2><label for="gain">Gain ("Volume"):</label></h2>
-        <br/>
-        <input type="text" id="gain" value="1.0"/>
     </div>
     <div class="grid-record">
         <button id="record" onclick="recordNotes()" aria-label="Record Composition">Record</button>

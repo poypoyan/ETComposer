@@ -43,4 +43,3 @@ Kumbaga, inalis ang mga rásyong kalima:
 9/5 = 7
 5/5 = 0
 7/5 = 4
-
