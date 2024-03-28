@@ -9,12 +9,14 @@ Basic Intervals:
 * Major sixth = +6
 
 Ang aking "Mayor" na eskala (19 Abr 2023):
+>> Eng: My "Major" scale (19 Apr 2023):
 [
 [0],[2],[3],[5],[6],[9],[10],[12],[13],[],
 [0],[2,0],[3,0],[5,0],[6,0],[9,0],[10,0],[12,0],[13,0]
 ]
 
-Ang aking "Minor" na eskala (20 Abr 2023): 
+Ang aking "Minor" na eskala (20 Abr 2023):
+>> Eng: My "Minor" scale (20 Apr 2023):
 [
 [0], [2], [3], [4], [7], [9], [10], [11], [13],[],
 [0],[2,0],[3,0],[4,0],[7,0],[9,0],[10,0],[11,0],[13,0]
@@ -22,9 +24,11 @@ Ang aking "Minor" na eskala (20 Abr 2023):
 
 Oo, hindi ang mga iyan moda ng isa't isa! Subalit may karanasan
 na ako sa paggamit ng dalawang iyan.
-
+>> Eng: Yes, those are not modes of each other! However I have
+experience on using those two.
 
 Mga rásyo ng mayor na eskala:
+>> Eng: The ratios of major scale:
 
 3/3 = 0
 5/3 = 6
@@ -39,6 +43,7 @@ Mga rásyo ng mayor na eskala:
 7/7 = 0
 
 Kumbaga, inalis ang mga rásyong kalima:
+>> Eng: That is, over-5 ratios are removed:
 
 9/5 = 7
 5/5 = 0
