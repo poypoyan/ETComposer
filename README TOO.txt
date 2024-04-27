@@ -8,7 +8,7 @@ in Github, thank you for reading. I appreciate your curiosity.
 Yes, the sounds this program produces are primitive. This is limited to a speci-
 fic wave to make harmonies on. Consequently, there is no percussion. There are
 no dynamics nor articulations nor ornaments. The rhythm is just a grid that you
-can change the duration of grid length anytime, correspoding to a tempo change.
+can change the duration of grid length anytime, corresponding to a tempo change.
 
 I am not saying that you should judge my works without these limitations in
 mind. It is my opinion that despite the priority of Western tradition to melody,
