@@ -10,20 +10,20 @@ Distributed under the MIT software license. See the accompanying file LICENSE or
 <script>
 function generateFreq() {
     // get values
-    var startFreq = parseFloat(document.getElementById('startFreq').value);
-    var endFreq = parseFloat(document.getElementById('endFreq').value);
-    var division = parseInt(document.getElementById('division').value);
+    const startFreq = parseFloat(document.getElementById('startFreq').value);
+    const endFreq = parseFloat(document.getElementById('endFreq').value);
+    const division = parseInt(document.getElementById('division').value);
     // error check the numerical values
     if (!(startFreq > 0 && endFreq > 0 && division >= 0)) {
         alert('Found an invalid value in inputs.');
         return;
     }
     // setup the frequencies
-    var currFreq = startFreq;
+    let currFreq = startFreq;
     document.getElementById('freqList').options.length = 0;   // clear list box
-    for (var i = 0; i < (division + 1); i++) {
+    for (let i = 0; i < (division + 1); i++) {
         // add frequency to list box
-        var opt = document.createElement('option');
+        const opt = document.createElement('option');
         opt.value = currFreq;
         opt.text = i + ": " + currFreq;
         document.getElementById('freqList').add(opt);
@@ -34,36 +34,38 @@ function generateFreq() {
 function clearFreq() {
     // clear list box
     document.getElementById('freqList').options.length = 0;
-    var opt = document.createElement('option');   // bring back the original 'empty' option
+    const opt = document.createElement('option');   // bring back the original 'empty' option
     opt.text = 'Empty'; opt.disabled = true;
     document.getElementById('freqList').add(opt);
     // clear grabbedFreq
     document.getElementById('grabbedFreq').value = '';
 }
 function grabFreq() {
-    var list = document.getElementById('freqList');
+    const list = document.getElementById('freqList');
     if (list.selectedIndex >= 0)   // no more debug error
         document.getElementById('grabbedFreq').value = list[list.selectedIndex].value;
 }
 function setNotes(context) {
     // get needed inputs
-    var gain = parseFloat(document.getElementById('gain').value);
-    var composed = document.getElementById('composed').value;
-    var list = document.getElementById('freqList');
+    const gain = parseFloat(document.getElementById('gain').value);
+    const composed = document.getElementById('composed').value;
+    const list = document.getElementById('freqList');
     // error check the numerical values
     if (Number.isNaN(gain)) throw('\'Gain\' value is invalid.');
     // error check if freqList is clear
     if (list[0].value === 'Empty') throw('Empty frequency list.');
     // get selected waveType
-    var waveType, radios = document.getElementsByName('waveType');
-    for (var i = 0; i < radios.length; i++) {
+    const radios = document.getElementsByName('waveType');
+    let waveType;
+    for (let i = 0; i < radios.length; i++) {
         if (radios[i].checked) waveType = radios[i].value;
     }
     // setup oscillators and get wave type
-    var oscArr = new Array(list.options.length);
-    for (var i = 0; i < oscArr.length; i++) {
+    const oscArr = new Array(list.options.length);
+    for (let i = 0; i < oscArr.length; i++) {
         oscArr[i] = context.createOscillator();
         oscArr[i].type = waveType;
+        oscArr[i].frequency.setValueAtTime(0, context.currentTime);
     }
     // parse JSON
     try {
@@ -72,43 +74,53 @@ function setNotes(context) {
         throw('JSON syntax error.');
     }
     // setup composition to oscillators
-    var currFreq, currDur, totalDur = 0, untieIdx;
+    let currFreq, currDur, totalDur = 0;
     if (!Array.isArray(compArr[0]) || compArr[0][0] !== 'p') throw('Initial property not set.');
-    for (var i = 0; i < compArr.length; i++) {
+    for (let i = 0; i < compArr.length; i++) {
         if (!Array.isArray(compArr[i])) throw(`Index ${i} is not an Array.`);
         if (compArr[i][0] === 'p') {   // property set
             currDur = parseFloat(compArr[i][1]);
             continue;
         } else {   // note set
             try {
-                for (var j = 0; j < oscArr.length; j++) {
-                    if (j < compArr[i].length) {
-                        currPitch = Math.trunc(compArr[i][j]);
-                        untieDur = compArr[i][j] - currPitch;
-                        if (untieDur != 0) oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur + (untieDur * currDur));
-                        currFreq = parseFloat(list[currPitch].value);
-                        oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + totalDur);
+                for (let j = 0; j < compArr[i].length; j++) {
+                    let noteData, delayDur;
+                    if (Array.isArray(compArr[i][j]) && compArr[i][j].length === 2 && compArr[i][j][1] > 0) {
+                        noteData = compArr[i][j][0]; delayDur = compArr[i][j][1];
+                    } else if (Number.isFinite(compArr[i][j])) {
+                        noteData = compArr[i][j]; delayDur = 0;
                     } else {
-                        oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur);
+                        throw(`note ${j} is of invalid format`);
                     }
+                    let [currPitch, untieDur] = splitDecimal(noteData);
+                    if (untieDur == 0) untieDur = 1;   // "empty decimal is full note"
+                    if (delayDur >= untieDur) throw(`at note ${j}, delayed start time is at or later than untie time`);
+                    currFreq = parseFloat(list[currPitch].value);
+                    oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + totalDur + (delayDur * currDur));
+                    oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur + (untieDur * currDur));
                 }
                 totalDur += currDur;
             } catch(e) {
-                throw(`Index ${i} is invalid.`);
+                throw(`Index ${i} is invalid: ${e}.`);
             }
         }
     }
     // setup sound volume
-    var gainNode = context.createGain();
+    const gainNode = context.createGain();
     gainNode.gain.value = gain;
     // connect nodes and return objects
     for (let oscIter of oscArr) oscIter.connect(gainNode);
     return [gainNode, oscArr, totalDur];
 }
+function splitDecimal(num) {
+    if (Number.isInteger(num)) return [num, 0];
+    splitNum = num.toString().split('.');
+    return [Number(splitNum[0]), Number('.' + splitNum[1])];
+}
 function playNotes() {
     disableButtons(true);
     // setup web audio API
-    var context = new (window.AudioContext || window.webkitAudioContext)();
+    const context = new (window.AudioContext || window.webkitAudioContext)();
     // set notes according to composer
     try {
         var setNotesOutput = setNotes(context);
@@ -117,9 +129,8 @@ function playNotes() {
         disableButtons(false);
         return;
     }
-    var gainNode = setNotesOutput[0];
-    var oscArr = setNotesOutput[1];
-    var duration = setNotesOutput[2];
+    const [gainNode, oscArr, duration] = setNotesOutput;
+
     // play now!
     gainNode.connect(context.destination);
     for (let oscIter of oscArr) oscIter.start();
@@ -137,7 +148,7 @@ function playNotes() {
 function recordNotes() {
     disableButtons(true);
     // setup web audio API
-    var context = new (window.AudioContext || window.webkitAudioContext)();
+    const context = new (window.AudioContext || window.webkitAudioContext)();
     // set notes according to composer
     try {
         var setNotesOutput = setNotes(context);
@@ -146,24 +157,23 @@ function recordNotes() {
         disableButtons(false);
         return;
     }
-    var gainNode = setNotesOutput[0];
-    var oscArr = setNotesOutput[1];
-    var duration = setNotesOutput[2];
+    const [gainNode, oscArr, duration] = setNotesOutput;
+
     // clear audioPlayer
-    var record = document.getElementById('audioPlayer').src;
-    if (record != '') {
+    const record = document.getElementById('audioPlayer').src;
+    if (record !== '') {
         URL.revokeObjectURL(record);
         document.getElementById('audioPlayer').removeAttribute('src');
     }
     // setup media recorder
-    var chunks = [];
-    var dest = context.createMediaStreamDestination();
+    const chunks = [];
+    const dest = context.createMediaStreamDestination();
     mediaRecorder = new MediaRecorder(dest.stream);
     mediaRecorder.ondataavailable = function(evt) {
         chunks.push(evt.data);
     };
     mediaRecorder.onstop = function() {
-        let blob = new Blob(chunks, {'type': 'audio/ogg; codecs=opus'});
+        const blob = new Blob(chunks, {'type': 'audio/ogg; codecs=opus'});
         document.getElementById('audioPlayer').src = URL.createObjectURL(blob);
     };
     // record now!
