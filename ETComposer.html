@@ -96,8 +96,8 @@ function setNotes(context) {
                     if (untieDur == 0) untieDur = 1;   // "empty decimal is full note"
                     if (delayDur >= untieDur) throw(`at note ${j}, delayed start time is at or later than untie time`);
                     currFreq = parseFloat(list[currPitch].value);
-                    oscArr[j].frequency.setValueAtTime(currFreq, context.currentTime + totalDur + (delayDur * currDur));
-                    oscArr[j].frequency.setValueAtTime(0, context.currentTime + totalDur + (untieDur * currDur));
+                    oscArr[currPitch].frequency.setValueAtTime(currFreq, context.currentTime + totalDur + (delayDur * currDur));
+                    oscArr[currPitch].frequency.setValueAtTime(0, context.currentTime + totalDur + (untieDur * currDur));
                 }
                 totalDur += currDur;
             } catch(e) {
