@@ -53,7 +53,7 @@ function setNotes(context) {
     // error check the numerical values
     if (Number.isNaN(gain)) throw('\'Gain\' value is invalid.');
     // error check if freqList is clear
-    if (list[0].value === 'Empty') throw('Empty frequency list.');
+    if (list[0].value === 'Empty') throw('Empty frequency list. Click \'Generate\' first.');
     // get selected waveType
     const radios = document.getElementsByName('waveType');
     let waveType;
