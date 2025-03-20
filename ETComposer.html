@@ -300,6 +300,24 @@ input[type='text'] {   /* textboxes */
 #audioPlayer {   /* audio player */
     padding: 5px; width: 300px;
 }
+
+@media (prefers-color-scheme: dark) {
+    body, input, select, textarea {
+        background: #121212;
+        color: #c8c8c8;
+    }
+    button {
+        background: #383838;
+        color: #d8d8d8;
+    }
+    button:hover {
+        background: #686868;
+    }
+    button:disabled, button[disabled] {
+        background: #121212;
+        color: #999;
+    }
+}
 </style>
 </head>
 <body>
