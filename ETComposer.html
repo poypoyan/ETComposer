@@ -74,11 +74,12 @@ function setNotes(context) {
         throw('JSON syntax error.');
     }
     // setup composition to oscillators
+    const durSymbol = 'd'
     let currFreq, currDur, totalDur = 0;
-    if (!Array.isArray(compArr[0]) || compArr[0][0] !== 'p') throw('Initial property not set.');
+    if (!Array.isArray(compArr[0]) || compArr[0][0] !== durSymbol) throw('Initial duration not set.');
     for (let i = 0; i < compArr.length; i++) {
         if (!Array.isArray(compArr[i])) throw(`Index ${i} is not an Array.`);
-        if (compArr[i][0] === 'p') {   // property set
+        if (compArr[i][0] === durSymbol) {   // duration property set
             currDur = parseFloat(compArr[i][1]);
             continue;
         } else {   // note set
@@ -342,12 +343,12 @@ input[type='text'] {   /* textboxes */
     <div class="grid-composed">
         <h2><label for="composed">JSON Array Composer:</label></h2>
         <textarea id="composed" rows="5">[
-["p", 0.75],
+["d", 0.75],
 [0], [4], [7],
 [0, 4, 7], [],
 [5], [5], [5], [],
 [5.95], [5.95], [5.95],
-["p", 0.25],
+["d", 0.25],
 [0], [4], [7],
 [0, 4, 7], [],
 [5], [5], [5], [],
